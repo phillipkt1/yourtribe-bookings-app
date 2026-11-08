@@ -1,0 +1,10 @@
+{
+  "name": "YourTribe Bookings",
+  "short_name": "Bookings",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4f4f4",
+  "theme_color": "#000000",
+  "description": "YourTribe room bookings for the iPad",
+  "icons": [{"src":"icon.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

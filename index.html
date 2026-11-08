@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#000000">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<title>YourTribe room bookings</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+:root{color-scheme:light;--bg:#f4f4f4;--surface:#fff;--ink:#000;--mute:#555;--line:#cfcfcf;--brand:#000;--on-brand:#fff;box-sizing:border-box}*{box-sizing:inherit}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif}header{background:#000;color:#fff;padding:24px 16px}header div,main{max-width:860px;margin:auto}.logo{font-weight:800;font-size:2.5rem;line-height:1}.logo small{display:block;font-size:.8rem}main{padding:20px 16px 48px}h2{font-size:1.15rem;margin:28px 0 14px}button,input,select{font:inherit;color:inherit}button{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px;cursor:pointer}button.primary,.tabs button[aria-pressed=true]{background:var(--brand);color:var(--on-brand);border-color:var(--brand);font-weight:600}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #555;outline-offset:2px}.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}.tabs button{padding:14px 10px}form{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:22px 18px;display:grid;grid-template-columns:1fr 1fr;gap:18px 14px}label{display:grid;gap:8px;font-size:.9rem;color:var(--mute);min-width:0}input,select{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:13px 12px;width:100%;min-width:0}.full{grid-column:1/-1}.msg:empty{display:none}.msg{margin:0;font-weight:600}.bar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px}table{border-collapse:collapse;width:100%;min-width:520px}th,td{text-align:left;padding:11px 12px;border-top:1px solid var(--line)}th{border-top:0;color:var(--mute);font-weight:600;font-size:.9rem}td button{padding:4px 10px}.empty{padding:16px;color:var(--mute)}.link{border:0;background:none;text-decoration:underline;padding:4px}@media(max-width:520px){form{grid-template-columns:1fr}.full{grid-column:1}}
+</style>
+</head>
+<body>
+<header><div class="logo" role="img" aria-label="YourTribe"><small>Your</small>Tribe</div></header>
+<main>
+<h2>Book a room</h2>
+<form id="form">
+<label class="full">Room<select id="room"><option>Cinema Room</option><option>Private Dining Room</option></select></label>
+<label class="full">Date<input type="date" id="date" required></label>
+<label class="full">Name<input id="name" required maxlength="40" autocomplete="name"></label>
+<label class="full">Flat<input id="flat" required maxlength="10" placeholder="e.g. 4B"></label>
+<label>Time In<input type="time" id="tin" step="900" required></label>
+<label>Time Out<input type="time" id="tout" step="900" required></label>
+<p class="msg full" id="msg" role="alert"></p><div class="full"><button class="primary" type="submit">Book room</button></div>
+</form>
+<h2>Bookings</h2>
+<div class="tabs" id="tabs"><button type="button" data-room="Cinema Room" aria-pressed="true">Cinema Room</button><button type="button" data-room="Private Dining Room" aria-pressed="false">Private Dining Room</button></div>
+<div class="bar"><span id="count"></span><button class="link" id="togglePast" type="button"></button></div><div class="scroll" id="table"></div>
+</main>
+<script>
+(function(){
+  var KEY="yourtribe:bookings", bookings=load(), view="Cinema Room", showPast=false, $=function(id){return document.getElementById(id)};
+  function load(){try{var v=JSON.parse(localStorage.getItem(KEY)||"[]");return Array.isArray(v)?v:[]}catch(e){return[]}}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(bookings))}catch(e){alert("Could not save bookings. Check available storage on this iPad.")}}
+  function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function mins(t){var p=t.split(":");return Number(p[0])*60+Number(p[1])}
+  function pretty(s){var p=s.split("-");return new Date(+p[0],+p[1]-1,+p[2]).toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short"})}
+  function esc(s){return String(s).replace(/[&<>\"]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]})}
+  function render(){var today=iso(new Date());Array.prototype.forEach.call($("tabs").children,function(b){b.setAttribute("aria-pressed",b.getAttribute("data-room")===view)});var rows=bookings.filter(function(b){return b.room===view&&(showPast||b.date>=today)}).sort(function(a,b){return a.date===b.date?mins(a.tin)-mins(b.tin):(a.date<b.date?-1:1)});$("count").textContent=rows.length+(rows.length===1?" booking":" bookings");$("togglePast").textContent=showPast?"Hide past bookings":"Show past bookings";if(!rows.length){$("table").innerHTML='<div class="empty">No bookings for the '+esc(view)+' yet. It’s free.</div>';return}$("table").innerHTML="<table><thead><tr><th>Date</th><th>Name</th><th>Flat</th><th>Time In</th><th>Time Out</th><th></th></tr></thead><tbody>"+rows.map(function(b){return "<tr><td>"+pretty(b.date)+"</td><td>"+esc(b.name)+"</td><td>"+esc(b.flat)+"</td><td>"+esc(b.tin)+"</td><td>"+esc(b.tout)+"</td><td><button type=\"button\" data-del=\""+esc(b.id)+"\">Cancel</button></td></tr>"}).join("")+"</tbody></table>"}
+  $("tabs").onclick=function(e){var r=e.target.getAttribute("data-room");if(r){view=r;render()}};
+  $("togglePast").onclick=function(){showPast=!showPast;render()};$("room").onchange=function(){view=this.value;render()};
+  $("table").onclick=function(e){var id=e.target.getAttribute("data-del");if(!id)return;var b=bookings.filter(function(x){return x.id===id})[0];if(b&&confirm("Cancel "+b.name+"’s booking on "+pretty(b.date)+", "+b.tin+"–"+b.tout+"?")){bookings=bookings.filter(function(x){return x.id!==id});save();render()}};
+  $("form").onsubmit=function(e){e.preventDefault();var b={id:String(Date.now()),room:$("room").value,date:$("date").value,name:$("name").value.trim(),flat:$("flat").value.trim(),tin:$("tin").value,tout:$("tout").value},msg=$("msg");msg.textContent="";var s=mins(b.tin),en=mins(b.tout);if(b.date<iso(new Date())){msg.textContent="Pick today or a future date.";return}if(en<=s){msg.textContent="Time Out needs to be after Time In.";return}var clash=bookings.filter(function(o){return o.room===b.room&&o.date===b.date&&s<mins(o.tout)&&mins(o.tin)<en})[0];if(clash){msg.textContent="The "+b.room+" is already booked "+clash.tin+"–"+clash.tout+" by "+clash.name+" (flat "+clash.flat+").";return}bookings.push(b);save();view=b.room;$("name").value="";$("flat").value="";$("tin").value="";$("tout").value="";render()};
+  $("date").value=iso(new Date());$("date").min=iso(new Date());render();
+})();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});})}</script>
+</body>
+</html>
